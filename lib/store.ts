@@ -145,7 +145,7 @@ interface ChatState {
   createConversation: (title?: string) => Promise<Conversation>;
   loadConversations: () => Promise<void>;
   loadMessages: (conversationId: string) => Promise<void>;
-  sendMessage: (conversationId: string, content: string) => Promise<void>;
+  sendMessage: (conversationId: string, content: string, fileUrl?: string) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
   setCurrentConversation: (conversationId: string | null) => void;
 }
@@ -159,12 +159,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   createConversation: async (title?: string) => {
     try {
-      set({ isLoading: true, error: null });
+      set({ error: null });
       const response = await api.post("/conversations", { title });
       const conversation = response.data.data || response.data;
       set((state) => ({
         conversations: [conversation, ...state.conversations],
         currentConversation: conversation.id,
+        messages: [],
         isLoading: false,
       }));
       return conversation;
@@ -193,19 +194,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   loadMessages: async (conversationId: string) => {
     try {
-      set({ isLoading: true, error: null });
+      // Only set loading if we're actually loading messages (not for new empty conversations)
       const response = await api.get(`/conversations/${conversationId}/messages`);
       const messages = response.data.data || response.data;
-      set({ messages, isLoading: false });
+      // Ensure we only set messages if we're still on the same conversation
+      set((state) => {
+        if (state.currentConversation === conversationId) {
+          return { messages, isLoading: false };
+        }
+        return { isLoading: false };
+      });
     } catch (error: any) {
+      let errorMessage = "Failed to load messages";
+      
+      if (!navigator.onLine) {
+        errorMessage = "No network connection. Please check your internet connection and try again.";
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('network')) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error.response) {
+        errorMessage = error.response?.data?.message || "Failed to load messages";
+      } else if (error.request) {
+        errorMessage = "Unable to reach server. Please check your internet connection and try again.";
+      }
+      
       set({
         isLoading: false,
-        error: error.response?.data?.message || "Failed to load messages",
+        error: errorMessage,
       });
     }
   },
 
-  sendMessage: async (conversationId: string, content: string) => {
+  sendMessage: async (conversationId: string, content: string, fileUrl?: string) => {
     try {
       set({ isLoading: true, error: null });
 
@@ -223,9 +242,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: [...state.messages, userMessage],
       }));
 
-      const response = await api.post(`/conversations/${conversationId}/messages`, {
-        content,
-      });
+      // Prepare request body with optional attachments
+      const requestBody: any = { content };
+      if (fileUrl) {
+        requestBody.attachments = [fileUrl];
+      }
+
+      const response = await api.post(`/conversations/${conversationId}/messages`, requestBody);
 
       const responseData = response.data.data || response.data;
       const savedUserMessage = responseData.userMessage || responseData;
@@ -239,20 +262,48 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isLoading: false,
       }));
 
-      // Update conversation in list
-      set((state) => ({
-        conversations: state.conversations.map((conv) =>
-          conv.id === conversationId
-            ? { ...conv, updatedAt: new Date().toISOString() }
-            : conv
-        ),
-      }));
+      // Update conversation in list and set title from first message if needed
+      set((state) => {
+        const currentConv = state.conversations.find((conv) => conv.id === conversationId);
+        const isFirstMessage = state.messages.filter((msg) => msg.conversationId === conversationId).length === 0;
+        
+        return {
+          conversations: state.conversations.map((conv) =>
+            conv.id === conversationId
+              ? {
+                  ...conv,
+                  updatedAt: new Date().toISOString(),
+                  // Update title with user's first message (truncate if too long)
+                  title: isFirstMessage && currentConv?.title === "New Conversation"
+                    ? content.length > 50
+                      ? content.substring(0, 47) + "..."
+                      : content
+                    : conv.title,
+                }
+              : conv
+          ),
+        };
+      });
     } catch (error: any) {
+      // Check for network/connectivity errors
+      let errorMessage = "Failed to send message";
+      
+      if (!navigator.onLine) {
+        errorMessage = "No network connection. Please check your internet connection and try again.";
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('network')) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error.response) {
+        errorMessage = error.response?.data?.message || "Failed to send message";
+      } else if (error.request) {
+        errorMessage = "Unable to reach server. Please check your internet connection and try again.";
+      }
+
       set({
         isLoading: false,
-        error: error.response?.data?.message || "Failed to send message",
+        error: errorMessage,
       });
-      // Remove optimistic message on error
+      
+      // Remove optimistic message on error using the actual userMessage id
       set((state) => ({
         messages: state.messages.filter((msg) => msg.id !== userMessage.id),
       }));
@@ -286,7 +337,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setCurrentConversation: (conversationId: string | null) => {
-    set({ currentConversation: conversationId, messages: [] });
+    // Clear messages immediately when switching conversations to prevent showing wrong messages
+    set({ currentConversation: conversationId, messages: [], isLoading: false, error: null });
     if (conversationId) {
       get().loadMessages(conversationId);
     }
