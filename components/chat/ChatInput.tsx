@@ -203,11 +203,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         <div
           className={cn(
             "flex flex-col",
-            "bg-neutral-100 dark:bg-neutral-700",
             "rounded-3xl",
             "px-5 py-5",
             "transition-all duration-200",
-            isRecording && "bg-gray-500 dark:bg-gray-100"
+            isRecording 
+              ? "bg-gray-300 dark:bg-gray-600" 
+              : "bg-neutral-100 dark:bg-neutral-700"
           )}
         >
           {/* Text Input Area */}
@@ -220,11 +221,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             rows={1}
             className={cn(
               "w-full bg-transparent",
-              "text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-200",
               "outline-none resize-none",
               "min-h-[24px] max-h-[120px]",
               "mb-6",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "scrollbar-hide",
+              isRecording
+                ? "text-gray-900 dark:text-gray-100 placeholder:text-gray-600 dark:placeholder:text-gray-300"
+                : "text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500",
+              "text-sm"
             )}
             style={{
               height: "auto",
@@ -331,6 +336,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Disclaimer Text */}
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-3 pb-6">
+          Taxgpt can make mistakes, so double-check it
+        </p>
       </div>
     </div>
   );

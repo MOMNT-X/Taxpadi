@@ -263,7 +263,7 @@ const OnboardingPage: React.FC = () => {
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
             TP
           </div>
-          <span className="text-2xl font-semibold">TaxPadi</span>
+          <span className="text-2xl font-semibold">Taxgpt</span>
         </div>
 
         {/* Onboarding Card */}

@@ -104,34 +104,59 @@ export const useVoiceRecording = (): UseVoiceRecordingReturn => {
       return;
     }
 
+    // If already recording, stop first
+    if (isRecording && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.error("Error stopping before restart:", e);
+      }
+    }
+
     setError(null);
     setTranscript("");
     setInterimTranscript("");
     finalTranscriptRef.current = "";
-    setIsRecording(true);
 
     try {
-      recognitionRef.current?.start();
-    } catch (err: any) {
-      console.error("Error starting recognition:", err);
+      // Wait a bit if we just stopped to ensure clean state
+      const startDelay = isRecording ? 150 : 0;
       
-      // If already started, try stopping and restarting
-      if (err.message?.includes("already started")) {
+      setTimeout(() => {
+        setIsRecording(true);
         try {
-          recognitionRef.current?.stop();
-          setTimeout(() => {
-            recognitionRef.current?.start();
-          }, 100);
-        } catch (restartErr) {
-          setError("Failed to start recording. Please try again.");
-          setIsRecording(false);
+          recognitionRef.current?.start();
+        } catch (err: any) {
+          console.error("Error starting recognition:", err);
+          
+          // If still getting "already started" error, force stop and retry once
+          if (err.message?.includes("already started")) {
+            try {
+              recognitionRef.current?.stop();
+              setTimeout(() => {
+                try {
+                  recognitionRef.current?.start();
+                  setIsRecording(true);
+                } catch (retryErr) {
+                  setError("Failed to start recording. Please try again.");
+                  setIsRecording(false);
+                }
+              }, 200);
+            } catch (stopErr) {
+              setError("Failed to start recording. Please try again.");
+              setIsRecording(false);
+            }
+          } else {
+            setError("Failed to start recording. Please try again.");
+            setIsRecording(false);
+          }
         }
-      } else {
-        setError("Failed to start recording. Please try again.");
-        setIsRecording(false);
-      }
+      }, startDelay);
+    } catch (err) {
+      setError("Failed to start recording. Please try again.");
+      setIsRecording(false);
     }
-  }, [isSupported]);
+  }, [isSupported, isRecording]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current && isRecording) {

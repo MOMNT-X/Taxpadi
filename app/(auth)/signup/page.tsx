@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, Mail, Lock, User } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import Image from 'next/image';
 
 const SignupPage: React.FC = () => {
   const [name, setName] = useState<string>('');
@@ -10,116 +11,6 @@ const SignupPage: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1000, y: -1000 });
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  // Particle animation
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const updateSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    updateSize();
-
-    const particles = Array.from({ length: 40 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      baseX: 0,
-      baseY: 0,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      radius: Math.random() * 1.5 + 0.5,
-    }));
-
-    particles.forEach(p => {
-      p.baseX = p.x;
-      p.baseY = p.y;
-    });
-
-    let animationId = 0 as number;
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach(particle => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-
-        if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
-        if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
-
-        const dx = mousePosition.x - particle.x;
-        const dy = mousePosition.y - particle.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < 150 && mousePosition.x > 0) {
-          const angle = Math.atan2(dy, dx);
-          const force = ((150 - distance) / 150) * 0.15;
-          particle.vx -= Math.cos(angle) * force;
-          particle.vy -= Math.sin(angle) * force;
-        }
-
-        const returnForce = 0.02;
-        particle.x += (particle.baseX - particle.x) * returnForce;
-        particle.y += (particle.baseY - particle.y) * returnForce;
-
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = window.matchMedia('(prefers-color-scheme: dark)').matches 
-          ? 'rgba(59, 130, 246, 0.4)' 
-          : 'rgba(59, 130, 246, 0.2)';
-        ctx.fill();
-
-        particles.forEach(other => {
-          const dx2 = particle.x - other.x;
-          const dy2 = particle.y - other.y;
-          const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-          if (dist < 120 && dist > 0) {
-            ctx.beginPath();
-            ctx.moveTo(particle.x, particle.y);
-            ctx.lineTo(other.x, other.y);
-            ctx.strokeStyle = `rgba(59, 130, 246, ${0.15 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        });
-      });
-
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      updateSize();
-      particles.forEach(p => {
-        if (p.x > canvas.width) p.x = canvas.width;
-        if (p.y > canvas.height) p.y = canvas.height;
-        p.baseX = p.x;
-        p.baseY = p.y;
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationId);
-    };
-  }, [mousePosition]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   const handleGoogleSignup = () => {
     window.location.href = `http://localhost:3000/auth/google`;
@@ -142,7 +33,6 @@ const SignupPage: React.FC = () => {
     try {
       const { signup } = useAuthStore.getState();
       await signup(name, email, password);
-      // Redirect to chat on successful signup
       window.location.href = '/chat';
     } catch (err: any) {
       setError(err.message || 'Signup failed. Please try again.');
@@ -157,46 +47,48 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white flex items-center justify-center p-4 overflow-hidden">
-      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
-
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex items-center justify-center p-4">
       <div className="relative z-10 w-full max-w-md">
         {/* Logo and Theme Toggle */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
-              TP
-            </div>
-            <span className="text-2xl font-semibold">TaxPadi</span>
+          <div className="flex items-center gap-2">
+            <Image 
+              src="/assets/logo.svg" 
+              alt="Taxgpt" 
+              width={32} 
+              height={32}
+              className="w-8 h-8"
+            />
+            <span className="text-2xl font-semibold">Taxgpt</span>
           </div>
           <ThemeToggle />
         </div>
 
         {/* Signup Card */}
-        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl border border-gray-200/50 dark:border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-8 shadow-xl">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Create Account</h1>
-            <p className="text-gray-400">Get started with TaxPadi today</p>
+            <p className="text-gray-600 dark:text-gray-400">Get started with Taxgpt today</p>
           </div>
 
           <div className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
                 {error}
               </div>
             )}
 
             {/* Name Input */}
             <div>
-              <label className="block text-sm font-medium mb-2">Full Name</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full bg-white/90 dark:bg-white/5 border border-gray-300/50 dark:border-white/10 rounded-lg pl-11 pr-4 py-3 focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder="John Doe"
                 />
               </div>
@@ -204,15 +96,15 @@ const SignupPage: React.FC = () => {
 
             {/* Email Input */}
             <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full bg-white/90 dark:bg-white/5 border border-gray-300/50 dark:border-white/10 rounded-lg pl-11 pr-4 py-3 focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -220,50 +112,50 @@ const SignupPage: React.FC = () => {
 
             {/* Password Input */}
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full bg-white/90 dark:bg-white/5 border border-gray-300/50 dark:border-white/10 rounded-lg pl-11 pr-4 py-3 focus:outline-none focus:border-blue-500 transition-colors backdrop-blur-sm"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder="At least 6 characters"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must be at least 6 characters long</p>
             </div>
 
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
             >
               {isLoading ? 'Creating account...' : 'Create Account'}
               {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
             </button>
 
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
               By signing up, you agree to our{' '}
-              <a href="#" className="text-blue-500 hover:underline">Terms of Service</a>
+              <a href="#" className="text-emerald-600 dark:text-emerald-500 hover:underline">Terms of Service</a>
               {' '}and{' '}
-              <a href="#" className="text-blue-500 hover:underline">Privacy Policy</a>
+              <a href="#" className="text-emerald-600 dark:text-emerald-500 hover:underline">Privacy Policy</a>
             </p>
           </div>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
+              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-black/50 px-3 text-sm text-gray-400">Or continue with</span>
+              <span className="bg-white dark:bg-gray-900 px-3 text-sm text-gray-500 dark:text-gray-400">Or continue with</span>
             </div>
           </div>
 
           <button
             onClick={handleGoogleSignup}
-            className="w-full py-3 bg-white/80 dark:bg-white/5 border border-gray-300/50 dark:border-white/10 hover:bg-white/90 dark:hover:bg-white/10 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 backdrop-blur-sm"
+            className="w-full py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-900 dark:text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -286,9 +178,9 @@ const SignupPage: React.FC = () => {
              Google
           </button>
 
-          <p className="text-center text-sm text-gray-400 mt-6">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
             Already have an account?{' '}
-            <a href="/login" className="text-blue-500 hover:text-blue-400 font-medium transition-colors">
+            <a href="/login" className="text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 font-medium transition-colors">
               Sign in
             </a>
           </p>
