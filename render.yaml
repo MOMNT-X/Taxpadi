@@ -1,0 +1,39 @@
+services:
+  # Frontend Service - Next.js Application
+  - type: web
+    name: taxpadi-frontend
+    runtime: docker
+    plan: free  # Change to 'starter' or higher for production
+    region: oregon  # Choose your preferred region
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Environment Variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: 1
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        sync: false  # Set this in Render dashboard or use fromGroup
+        # value: https://your-backend-url.onrender.com
+      - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+        sync: false  # Set this in Render dashboard
+        # value: your-google-client-id
+    
+    # Health check endpoint
+    healthCheckPath: /
+    
+    # Auto-deploy settings
+    autoDeploy: true
+    branch: main  # Change to your default branch if different
+    
+    # Build settings
+    buildFilter:
+      paths:
+        - "**/*"
+      ignoredPaths:
+        - "README.md"
+        - ".gitignore"
