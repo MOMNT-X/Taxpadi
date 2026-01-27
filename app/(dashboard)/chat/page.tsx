@@ -1,13 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { ChatSidebar } from "@/components/layout/ChatSidebar";
+import { SuggestionChips } from "@/components/chat/SuggestionChips";
+import { ChatInput } from "@/components/chat/ChatInput";
 import { useChat } from "@/hooks/useChat";
-import { Button } from "@/components/ui/Button";
-import { Plus, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ChatPage() {
-  const { createConversation, isLoading } = useChat();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { createConversation } = useChat();
   const router = useRouter();
 
   const handleNewChat = async () => {
@@ -19,20 +21,61 @@ export default function ChatPage() {
     }
   };
 
+  const handleMenuClick = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleCloseSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
+  const handleChipClick = async (suggestion: string) => {
+    try {
+      const conv = await createConversation();
+      router.push(`/chat/${conv.id}?message=${encodeURIComponent(suggestion)}`);
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+    }
+  };
+
   return (
-    <div className="h-full flex items-center justify-center p-4">
-      <div className="text-center max-w-md">
-        <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-        <h2 className="text-2xl font-bold mb-2">Start a new conversation</h2>
-        <p className="text-muted-foreground mb-6">
-          Ask me anything about Nigerian tax laws, calculations, or regulations.
-        </p>
-        <Button onClick={handleNewChat} isLoading={isLoading} size="lg">
-          <Plus className="h-5 w-5 mr-2" />
-          New Chat
-        </Button>
-      </div>
+    <div className="h-screen flex overflow-hidden bg-white dark:bg-neutral-800">
+      {/* Sidebar */}
+      <ChatSidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
+
+      {/* Main Content - Empty State */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 bg-white dark:bg-neutral-800">
+        <div className="w-full max-w-3xl space-y-6">
+          {/* Centered Heading */}
+          <div className="text-center space-y-2">
+            <p className="text-xl font-normal text-gray-900 dark:text-gray-200">
+              Ask freely we've got you.
+            </p>
+            <h1 className="text-4xl font-normal text-gray-900 dark:text-gray-100">
+              What tax question is on your mind?
+            </h1>
+          </div>
+
+          {/* Input Field */}
+          <ChatInput 
+            onSend={async (message) => {
+              try {
+                const conv = await createConversation();
+                router.push(`/chat/${conv.id}?message=${encodeURIComponent(message)}`);
+              } catch (error) {
+                console.error("Failed to create conversation:", error);
+              }
+            }}
+            isLoading={false}
+            isInEmptyState={true}
+          />
+
+          {/* Suggestion Chips */}
+          <div>
+            <SuggestionChips onChipClick={handleChipClick} />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
-
