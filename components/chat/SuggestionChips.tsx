@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 interface SuggestionChipsProps {
   onChipClick: (suggestion: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const suggestions = [
@@ -26,6 +27,7 @@ const suggestions = [
 export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
   onChipClick,
   className,
+  disabled = false,
 }) => {
   return (
     <div
@@ -38,6 +40,7 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
         <button
           key={index}
           onClick={() => onChipClick(`${suggestion.title}`)}
+          disabled={disabled}
           className={cn(
             "group relative",
             "bg-neutral-100 dark:bg-neutral-900",
@@ -47,7 +50,8 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
             "transition-all duration-200",
             "hover:bg-gray-50 dark:hover:bg-gray-750",
             "active:scale-[0.98]",
-            "w-auto max-w-[240px]"
+            "w-auto max-w-[240px]",
+            disabled && "opacity-50 cursor-not-allowed"
           )}
         >
           <div className="flex flex-col gap-1">

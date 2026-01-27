@@ -7,6 +7,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  avatar?: string;
 }
 
 export interface Message {
@@ -48,7 +49,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await api.post("/auth/login", { email, password });
-      const { accessToken, refreshToken, user } = response.data;
+      
+      // Handle nested response structure
+      const responseData = response.data.data || response.data;
+      const { accessToken, refreshToken, user } = responseData;
 
       setTokens(accessToken, refreshToken);
       set({
@@ -72,7 +76,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email,
         password,
       });
-      const { accessToken, refreshToken, user } = response.data;
+      
+      // Handle nested response structure
+      const responseData = response.data.data || response.data;
+      const { accessToken, refreshToken, user } = responseData;
 
       setTokens(accessToken, refreshToken);
       set({
@@ -94,6 +101,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       isAuthenticated: false,
     });
+    // Redirect to homepage after logout
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   },
 
   checkAuth: async () => {
@@ -106,12 +117,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
       const response = await api.get("/auth/me");
+      
+      // Extract user data from nested response (backend returns {data: {user}, success: true})
+      const userData = response.data.data || response.data;
+      
+      console.log("User data from /auth/me:", userData);
+      console.log("User avatar:", userData?.avatar);
+      console.log("User name:", userData?.name);
+      console.log("User email:", userData?.email);
+      
       set({
-        user: response.data,
+        user: userData,
         isAuthenticated: true,
         isLoading: false,
       });
     } catch (error) {
+      console.error("checkAuth error:", error);
       clearTokens();
       set({
         user: null,
@@ -147,8 +168,30 @@ interface ChatState {
   loadMessages: (conversationId: string) => Promise<void>;
   sendMessage: (conversationId: string, content: string, fileUrl?: string) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
+  renameConversation: (conversationId: string, newTitle: string) => Promise<void>;
   setCurrentConversation: (conversationId: string | null) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
 }
+
+// Helper to auto-dismiss errors after a delay
+let errorTimeout: NodeJS.Timeout | null = null;
+
+const setErrorWithAutoDismiss = (set: any, errorMessage: string) => {
+  // Clear any existing timeout
+  if (errorTimeout) {
+    clearTimeout(errorTimeout);
+  }
+  
+  // Set the error
+  set({ error: errorMessage });
+  
+  // Auto-dismiss after 7 seconds
+  errorTimeout = setTimeout(() => {
+    set({ error: null });
+    errorTimeout = null;
+  }, 7000);
+};
 
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
@@ -156,6 +199,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isLoading: false,
   error: null,
+
+  setError: (error: string | null) => {
+    if (error) {
+      setErrorWithAutoDismiss(set, error);
+    } else {
+      set({ error: null });
+    }
+  },
+
+  clearError: () => {
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+      errorTimeout = null;
+    }
+    set({ error: null });
+  },
 
   createConversation: async (title?: string) => {
     try {
@@ -185,10 +244,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const conversations = response.data.data || response.data;
       set({ conversations, isLoading: false });
     } catch (error: any) {
-      set({
-        isLoading: false,
-        error: error.response?.data?.message || "Failed to load conversations",
-      });
+      setErrorWithAutoDismiss(set, error.response?.data?.message || "Failed to load conversations");
+      set({ isLoading: false });
     }
   },
 
@@ -207,36 +264,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (error: any) {
       let errorMessage = "Failed to load messages";
       
+      // Log the full error for developers
+      console.error("Load messages error:", error);
+      
       if (!navigator.onLine) {
         errorMessage = "No network connection. Please check your internet connection and try again.";
       } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('network')) {
         errorMessage = "Network error. Please check your internet connection and try again.";
       } else if (error.response) {
-        errorMessage = error.response?.data?.message || "Failed to load messages";
+        // Handle specific HTTP error codes
+        const status = error.response.status;
+        
+        if (status === 429) {
+          // Rate limiting - user-friendly message
+          errorMessage = "You're loading messages too quickly. Please wait a moment and try again.";
+        } else if (status >= 500) {
+          // Server errors
+          errorMessage = "Our servers are experiencing issues. Please try again in a moment.";
+        } else if (status === 403) {
+          errorMessage = "You don't have permission to view this conversation.";
+        } else if (status === 404) {
+          errorMessage = "The conversation could not be found.";
+        } else {
+          // Generic error - don't expose technical details
+          errorMessage = "Something went wrong. Please try again.";
+        }
       } else if (error.request) {
         errorMessage = "Unable to reach server. Please check your internet connection and try again.";
       }
       
-      set({
-        isLoading: false,
-        error: errorMessage,
-      });
+      setErrorWithAutoDismiss(set, errorMessage);
+      set({ isLoading: false });
     }
   },
 
   sendMessage: async (conversationId: string, content: string, fileUrl?: string) => {
+    // Optimistically add user message
+    const userMessage: Message = {
+      id: `temp-${Date.now()}`,
+      conversationId,
+      role: "USER",
+      content,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
     try {
       set({ isLoading: true, error: null });
-
-      // Optimistically add user message
-      const userMessage: Message = {
-        id: `temp-${Date.now()}`,
-        conversationId,
-        role: "USER",
-        content,
-        timestamp: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      };
 
       set((state) => ({
         messages: [...state.messages, userMessage],
@@ -288,20 +362,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Check for network/connectivity errors
       let errorMessage = "Failed to send message";
       
+      // Log the full error for developers
+      console.error("Send message error:", error);
+      
       if (!navigator.onLine) {
         errorMessage = "No network connection. Please check your internet connection and try again.";
       } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('network')) {
         errorMessage = "Network error. Please check your internet connection and try again.";
       } else if (error.response) {
-        errorMessage = error.response?.data?.message || "Failed to send message";
+        // Handle specific HTTP error codes
+        const status = error.response.status;
+        
+        if (status === 429) {
+          // Rate limiting - user-friendly message
+          errorMessage = "You're sending messages too quickly. Please wait a moment and try again.";
+        } else if (status >= 500) {
+          // Server errors
+          errorMessage = "Our servers are experiencing issues. Please try again in a moment.";
+        } else if (status === 403) {
+          errorMessage = "You don't have permission to perform this action.";
+        } else if (status === 404) {
+          errorMessage = "The conversation could not be found.";
+        } else {
+          // Generic error - don't expose technical details
+          errorMessage = "Something went wrong. Please try again.";
+        }
       } else if (error.request) {
         errorMessage = "Unable to reach server. Please check your internet connection and try again.";
       }
 
-      set({
-        isLoading: false,
-        error: errorMessage,
-      });
+      setErrorWithAutoDismiss(set, errorMessage);
+      set({ isLoading: false });
       
       // Remove optimistic message on error using the actual userMessage id
       set((state) => ({
@@ -328,20 +419,43 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isLoading: false,
       }));
     } catch (error: any) {
-      set({
-        isLoading: false,
-        error: error.response?.data?.message || "Failed to delete conversation",
-      });
+      setErrorWithAutoDismiss(set, error.response?.data?.message || "Failed to delete conversation");
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  renameConversation: async (conversationId: string, newTitle: string) => {
+    try {
+      set({ error: null });
+      await api.patch(`/conversations/${conversationId}`, { title: newTitle });
+      
+      // Update local state
+      set((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv.id === conversationId ? { ...conv, title: newTitle } : conv
+        ),
+      }));
+    } catch (error: any) {
+      setErrorWithAutoDismiss(set, error.response?.data?.message || "Failed to rename conversation");
       throw error;
     }
   },
 
   setCurrentConversation: (conversationId: string | null) => {
-    // Clear messages immediately when switching conversations to prevent showing wrong messages
-    set({ currentConversation: conversationId, messages: [], isLoading: false, error: null });
-    if (conversationId) {
-      get().loadMessages(conversationId);
-    }
+    // Set loading FIRST before clearing messages to prevent empty state flash
+    set({ 
+      currentConversation: conversationId, 
+      isLoading: !!conversationId, // Set loading true if switching to a conversation
+      error: null 
+    });
+    
+    // Then clear messages after a brief delay to allow loading state to render
+    setTimeout(() => {
+      set({ messages: [] });
+      if (conversationId) {
+        get().loadMessages(conversationId);
+      }
+    }, 0);
   },
 }));
-

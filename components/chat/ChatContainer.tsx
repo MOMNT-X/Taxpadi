@@ -40,6 +40,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   };
 
   const handleChipClick = (suggestion: string) => {
+    // Prevent multiple clicks while loading
+    if (isLoading || isUploading) return;
     handleSend(suggestion);
   };
 
@@ -57,13 +59,14 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   }, [conversationId]);
 
   // Show suggestions only if: no messages, not loading, not uploading, no initial message pending, and user hasn't started typing
+  // IMPORTANT: Don't show empty state if we're loading (prevents flash when switching conversations)
   const showSuggestions = messages.length === 0 && !isLoading && !isUploading && !hasInitialMessage && !userStartedTyping;
 
   return (
     <div className="flex flex-col h-full">
       {showSuggestions ? (
         /* Empty State - Input in middle position */
-        <div className="flex-1 flex flex-col items-center justify-center px-4 bg-white dark:bg-gray-800">
+        <div className="flex-1 flex flex-col items-center justify-center px-4 bg-white dark:bg-neutral-800">
           <div className="w-full max-w-3xl space-y-6">
             {/* Centered Heading */}
             <div className="text-center space-y-1">
@@ -88,14 +91,28 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
 
             {/* Suggestion Chips */}
             <div>
-              <SuggestionChips onChipClick={handleChipClick} />
+              <SuggestionChips onChipClick={handleChipClick} disabled={isLoading || isUploading} />
             </div>
           </div>
         </div>
       ) : (
         /* Messages State - Input sticky at bottom */
         <>
-          <MessageList messages={messages} isLoading={isLoading || isUploading} />
+          {/* Show loading state when switching conversations */}
+          {isLoading && messages.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center bg-white dark:bg-neutral-800">
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1.4s" }} />
+                  <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "200ms", animationDuration: "1.4s" }} />
+                  <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: "400ms", animationDuration: "1.4s" }} />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading conversation...</p>
+              </div>
+            </div>
+          ) : (
+            <MessageList messages={messages} isLoading={isLoading || isUploading} />
+          )}
           <ChatInput 
             onSend={handleSend} 
             isLoading={isLoading || isUploading}

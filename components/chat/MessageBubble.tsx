@@ -73,7 +73,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             <div className={cn(isUser ? "max-w-[80%] ml-auto" : "w-full")}>
               {/* User Message Bubble */}
               {isUser ? (
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
+                <div className="bg-gray-100 dark:bg-neutral-700 rounded-2xl px-4 py-3">
                   <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-sm leading-relaxed">
                     {displayContent}
                   </p>

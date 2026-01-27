@@ -39,7 +39,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-white dark:bg-gray-800">
+    <div className="h-screen flex overflow-hidden bg-white dark:bg-neutral-800">
       {/* Sidebar */}
       <ChatSidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
 
@@ -48,7 +48,7 @@ export default function ChatPage() {
         <div className="w-full max-w-3xl space-y-6">
           {/* Centered Heading */}
           <div className="text-center space-y-2">
-            <p className="text-xl font-normal text-gray-900 dark:text-gray-400">
+            <p className="text-xl font-normal text-gray-900 dark:text-gray-200">
               Ask freely we've got you.
             </p>
             <h1 className="text-4xl font-normal text-gray-900 dark:text-gray-100">

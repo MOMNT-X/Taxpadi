@@ -33,9 +33,16 @@ export default function ChatDetailPage() {
       currentConversation === conversationId &&
       !initialMessageProcessedRef.current
     ) {
-      // Send message immediately after conversation is set
+      // Mark as processed IMMEDIATELY to prevent double submission
       initialMessageProcessedRef.current = true;
-      sendMessage(conversationId, initialMessage);
+      
+      // Send message after conversation is set
+      sendMessage(conversationId, initialMessage).catch((error) => {
+        console.error("Failed to send initial message:", error);
+        // Reset flag on error so user can retry
+        initialMessageProcessedRef.current = false;
+      });
+      
       // Remove the query param after sending
       window.history.replaceState({}, "", `/chat/${conversationId}`);
     }
@@ -65,14 +72,14 @@ export default function ChatDetailPage() {
 
   if (!conversationId) {
     return (
-      <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-800">
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-neutral-800">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-white dark:bg-gray-800">
+    <div className="h-screen flex overflow-hidden bg-white dark:bg-neutral-800">
       {/* Sidebar */}
       <ChatSidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
 

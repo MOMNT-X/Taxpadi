@@ -3,10 +3,14 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
-  title: "TaxPadi - Nigerian Tax AI Assistant",
+  title: "TaxGPT - Nigerian Tax AI Assistant",
   description: "Your intelligent assistant for Nigerian tax laws and calculations",
 };
 
@@ -16,12 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <body className="font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
-
-

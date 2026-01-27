@@ -47,9 +47,28 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["Fustat", "system-ui", "sans-serif"],
+      },
     },
   },
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [
+    require("@tailwindcss/typography"),
+    function ({ addUtilities }: any) {
+      addUtilities({
+        '.scrollbar-hide': {
+          /* IE and Edge */
+          '-ms-overflow-style': 'none',
+          /* Firefox */
+          'scrollbar-width': 'none',
+          /* Safari and Chrome */
+          '&::-webkit-scrollbar': {
+            display: 'none'
+          }
+        }
+      })
+    }
+  ],
 };
 
 export default config;
