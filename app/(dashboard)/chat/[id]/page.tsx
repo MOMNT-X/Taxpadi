@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
 import { ChatSidebar } from "@/components/layout/ChatSidebar";
@@ -8,7 +8,8 @@ import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-export default function ChatDetailPage() {
+// Component that uses useSearchParams - must be wrapped in Suspense
+function ChatDetailContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -89,5 +90,18 @@ export default function ChatDetailPage() {
         <ChatContainer conversationId={conversationId} />
       </main>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ChatDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-neutral-800">
+        <LoadingSpinner size="lg" />
+      </div>
+    }>
+      <ChatDetailContent />
+    </Suspense>
   );
 }
