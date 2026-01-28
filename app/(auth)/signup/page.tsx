@@ -13,7 +13,7 @@ const SignupPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleGoogleSignup = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://taxpadi-api.onrender.com';
     window.location.href = `${apiUrl}/auth/google`;
   };
 
