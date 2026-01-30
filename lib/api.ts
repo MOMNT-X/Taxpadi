@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { getToken, getRefreshToken, setTokens, clearTokens } from "./auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://taxpadi-api.onrender.com";
 
 export const api = axios.create({
   baseURL: API_URL,
