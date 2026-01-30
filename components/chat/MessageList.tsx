@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 import { MessageBubble } from "./MessageBubble";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Message } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 interface MessageListProps {
   messages: Message[];
@@ -18,50 +18,63 @@ export const MessageList: React.FC<MessageListProps> = ({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  if (isLoading && messages.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (messages.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <p className="text-lg mb-2">Start a conversation</p>
-          <p className="text-sm">Ask me anything about Nigerian tax laws!</p>
-        </div>
-      </div>
-    );
-  }
+  }, [messages, isLoading]);
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-white dark:bg-neutral-800 scrollbar-hide">
       <div className="max-w-4xl mx-auto">
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
+
+        {/* Loading/Thinking State */}
         {isLoading && (
-          <div className="flex gap-4 p-4">
-            <div className="flex-shrink-0">
-              <div className="h-8 w-8 rounded-full bg-primary-600 animate-pulse" />
-            </div>
-            <div className="flex-1">
-              <div className="h-4 bg-muted rounded w-1/4 mb-2 animate-pulse" />
-              <div className="space-y-2">
-                <div className="h-4 bg-muted rounded animate-pulse" />
-                <div className="h-4 bg-muted rounded w-5/6 animate-pulse" />
+          <div className="px-4 py-6  dark:bg-neutral-800">
+            <div className="flex gap-4">
+              {/* AI Avatar */}
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-white dark:bg-neutral-700 flex items-center justify-center p-1.5">
+                  <img 
+                    src="/assets/logo.svg" 
+                    alt="Taxgpt" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+
+              {/* Loading Content */}
+              <div className="flex-1 min-w-0 flex items-center">
+                {/* Animated Dots */}
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500",
+                      "animate-bounce"
+                    )}
+                    style={{ animationDelay: "0ms", animationDuration: "1.4s" }}
+                  />
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500",
+                      "animate-bounce"
+                    )}
+                    style={{ animationDelay: "200ms", animationDuration: "1.4s" }}
+                  />
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500",
+                      "animate-bounce"
+                    )}
+                    style={{ animationDelay: "400ms", animationDuration: "1.4s" }}
+                  />
+                </div>
               </div>
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
     </div>
   );
 };
-

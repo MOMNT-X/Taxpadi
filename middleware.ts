@@ -30,3 +30,4 @@ export const config = {
   matcher: ["/chat/:path*", "/history/:path*", "/login", "/signup"],
 };
 
+

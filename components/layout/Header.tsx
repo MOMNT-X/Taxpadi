@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </Button>
 
         <div className="flex-1">
-          <h1 className="text-lg font-semibold">TaxPadi</h1>
+          <h1 className="text-lg font-semibold">TaxGPT</h1>
         </div>
 
         <div className="flex items-center gap-2">
@@ -50,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <Dropdown
             trigger={
               <button className="flex items-center gap-2 p-2 rounded-md hover:bg-accent">
-                <Avatar name={user?.name} size="sm" />
+                <Avatar name={user?.name} src={user?.avatar} size="sm" />
               </button>
             }
             items={[
@@ -73,4 +73,5 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     </header>
   );
 };
+
 
