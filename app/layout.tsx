@@ -12,6 +12,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TaxGPT - Nigerian Tax AI Assistant",
   description: "Your intelligent assistant for Nigerian tax laws and calculations",
+  icons: {
+    icon: '/assets/logo.svg',
+  },
 };
 
 export default function RootLayout({
